@@ -13,7 +13,7 @@ namespace Plex_Backup
     {
         public static string registryPath = ConfigurationManager.AppSettings["PlexRegistryPath"];
         public static string pathToExportTo = ConfigurationManager.AppSettings["PathToExportTo"];
-        public static string appDataDirectoryToExportFrom = string.Format(@"{0}\{1}", 
+        public static string appDataDirectoryToExportFrom = string.Format(@"{0}\{1}",
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             ConfigurationManager.AppSettings["AppDataDirectoryToExportFrom"]);
         public static string registryBackupName = ConfigurationManager.AppSettings["RegistryBackupName"];
@@ -24,21 +24,38 @@ namespace Plex_Backup
         {
             var todaysDate = DateTime.Today.ToString("yyyy-MM-dd");
 
-            // Export plex settings
+            ExportRegistrySettings(todaysDate);
+            string backupFolderName = CreateBackupFolder(todaysDate);
+            CopyBackupFiles(backupFolderName);
+            DeleteOldFiles();
+            DeleteOldFolders();
+
+            Console.WriteLine("Program complete");
+        }
+
+        private static void ExportRegistrySettings(string todaysDate)
+        {
             Console.WriteLine("Exporting registry directory");
             var newFileName = string.Format("{0} {1}.reg", registryBackupName, todaysDate);
             RegistryService.ExportDirectory(registryPath, pathToExportTo, newFileName);
+        }
 
-            // Create backup folder
+        private static string CreateBackupFolder(string todaysDate)
+        {
             Console.WriteLine("Creating backup folder");
             var backupFolderName = string.Format(@"{0} {1}", appDataBackupName, todaysDate);
             Directory.CreateDirectory(backupFolderName);
+            return backupFolderName;
+        }
 
-            // Copy files
+        private static void CopyBackupFiles(string backupFolderName)
+        {
             Console.WriteLine("Copying backup files");
             CopyDirectory.Copy(appDataDirectoryToExportFrom, string.Format(@"{0}\{1}", pathToExportTo, backupFolderName));
+        }
 
-            // Delete old files 
+        private static void DeleteOldFiles()
+        {
             Console.WriteLine("Deleting old backup files");
             var registryBackupFiles = new DirectoryInfo(pathToExportTo)
                 .EnumerateFiles()
@@ -47,7 +64,10 @@ namespace Plex_Backup
                 .Skip(numberOfBackupsToKeep)
                 .ToList();
             registryBackupFiles.ForEach(f => f.Delete());
+        }
 
+        private static void DeleteOldFolders()
+        {
             Console.WriteLine("Deleting old backup folders");
             var appDataDirectories = new DirectoryInfo(pathToExportTo)
                 .EnumerateDirectories()
@@ -56,8 +76,6 @@ namespace Plex_Backup
                 .Skip(numberOfBackupsToKeep)
                 .ToList();
             appDataDirectories.ForEach(d => d.Delete(true));
-
-            Console.WriteLine("Program complete");
         }
     }
 }
