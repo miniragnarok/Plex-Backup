@@ -64,6 +64,18 @@ namespace Plex_Backup
                 .Skip(numberOfBackupsToKeep)
                 .ToList();
             registryBackupFiles.ForEach(f => f.Delete());
+            registryBackupFiles.ForEach(f => {
+                if (f.Exists)
+                {
+                    f.Delete();
+                    f.Refresh();
+                    while (f.Exists)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                        f.Refresh();
+                    }
+                }
+            });
         }
 
         private static void DeleteOldFolders()
