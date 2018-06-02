@@ -87,7 +87,22 @@ namespace Plex_Backup
                 .OrderByDescending(d => d.CreationTime)
                 .Skip(numberOfBackupsToKeep)
                 .ToList();
-            appDataDirectories.ForEach(d => d.Delete(true));
+
+            foreach(var directory in appDataDirectories)
+            {
+                try
+                {
+                    directory.Delete(true);
+                }
+                catch (IOException)
+                {
+                    directory.Delete(true);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    directory.Delete(true);
+                }
+            }
         }
     }
 }
